@@ -239,7 +239,7 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-# Project specific
+# Pycharm Project specific
 .idea/*.iml
 .idea/*.xml
 
