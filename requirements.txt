@@ -1,0 +1,9 @@
+appdirs==1.4.3
+distlib==0.2.4
+future==0.16.0
+packaging==16.8
+PyInstaller==3.2.1
+pyparsing==2.2.0
+pypiwin32==220
+selenium==3.3.3
+six==1.10.0
