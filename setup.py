@@ -18,7 +18,7 @@ setup(
         'six>=1.10.0',
     ],
     package_data={
-        '':['geckodriver', '*.tar.gz', '*.zip'],
+        '':['*.tar.gz'],
         'oresbot':['*.json'],
     }
 )
