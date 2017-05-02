@@ -19,7 +19,7 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 RUN apt-get update -y
 RUN apt-get install -y -q firefox xorg xvfb xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic
 RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.16.1/geckodriver-v0.16.1-linux64.tar.gz
-RUN tar zxvf geckodriver-v0.16.1-linux64.tar.gz -C $DIRPATH/geckodriver
+RUN tar zxvf geckodriver-v0.16.1-linux64.tar.gz -C $DIRPATH/
 
 ADD download_ores.py $DIRPATH/download_ores.py
 ADD credentials.json $DIRPATH/credentials.json
