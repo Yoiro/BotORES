@@ -27,13 +27,13 @@ ADD download_ores.py $DIRPATH/download_ores.py
 
 RUN chmod a+x download_ores.py
 
-COPY credentials.json $DIRPATH/credentials.json
+ADD credentials.json $DIRPATH/credentials.json
 
-COPY requirements.txt $DIRPATH/requirements.txt
+ADD requirements.txt $DIRPATH/requirements.txt
 
-COPY __init__.py $DIRPATH/__init__.py
+ADD __init__.py $DIRPATH/__init__.py
 
-COPY ores-cron $DIRPATH/ores-cron
+ADD ores-cron $DIRPATH/ores-cron
 
 RUN mkdir $DIRPATH/BotDownloads
 
