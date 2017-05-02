@@ -1,0 +1,4 @@
+MAILTO=""
+
+#min    hour    daymonth    month    weekday    command
+0 0 * * * python3 -m /volume1/share/download_ores.py && curl -sm 30 k.wdt.io/martin.hupez@umons.ac.be/ores-cron?c=0_0_*_*_*
