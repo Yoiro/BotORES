@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 import shutil
 import time
 from time import gmtime, strftime
@@ -19,7 +20,6 @@ if __name__ == '__main__':
             default_path = ""
         if sys.platform is 'linux':
             default_path = "home\\"
-
 
     default_user_path = default_path + os.environ['USERNAME']
     download_pth = default_user_path + "\\" + "BotDownloads"
