@@ -11,11 +11,8 @@ import sys
 if __name__ == '__main__':
 
     driver_name = "geckodriver"
+    default_path = "/home"
     download_pth = default_path + "/" + "BotDownloads"
-    if sys.platform is 'darwin':
-        default_path = ""
-    if sys.platform is 'linux':
-        default_path = "/home"
 
     with open('credentials.json') as data_file:
         data = json.load(data_file)
