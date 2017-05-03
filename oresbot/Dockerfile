@@ -9,6 +9,7 @@ RUN apt-get -y update
 RUN apt-get install -y -q software-properties-common wget
 RUN add-apt-repository -y ppa:mozillateam/firefox-next
 RUN apt-get update && apt-get -y install cron
+RUN sudo apt-get -y install python3.6
 RUN mkdir /volume1/
 RUN sudo mkdir /volume1/share/
 
