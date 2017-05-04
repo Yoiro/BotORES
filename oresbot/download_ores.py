@@ -10,9 +10,18 @@ import sys
 
 if __name__ == '__main__':
 
-    driver_name = "geckodriver"
-    default_path = "/home"
-    download_pth = default_path + "/" + "BotDownloads"
+    if sys.platform is 'win32' or sys.platform is 'cygwin' or os.name is 'nt':
+        default_path = "C:\\Users\\"
+        driver_name = "geckodriver.exe"
+        default_user_path = default_path + os.environ['USERNAME']
+        download_pth = default_user_path + "\\" + "BotDownloads"
+        exe_path = dirname(__file__)+"\\"+driver_name
+    else:
+        default_path = "/"
+        driver_name = "geckodriver"
+        default_user_path = "/home"
+        download_pth = "/home/BotDownloads"
+        exe_path = dirname(__file__) + "/" + driver_name
 
     with open('credentials.json') as data_file:
         data = json.load(data_file)
@@ -40,7 +49,7 @@ if __name__ == '__main__':
                             "application/xml"))
 
     # Creating driver
-    driver = webdriver.Firefox(executable_path=dirname(__file__)+"/"+driver_name, firefox_profile=profile)
+    driver = webdriver.Firefox(executable_path=exe_path, firefox_profile=profile)
 
     today = strftime("%d/%m/%Y", gmtime())
     day = int(today.split("/")[0])
@@ -212,6 +221,4 @@ if __name__ == '__main__':
                 shutil.move(os.path.join(download_pth, file), newfile)
                 print(os.listdir(download_pth))
         i += 1
-
-
     driver.close()
