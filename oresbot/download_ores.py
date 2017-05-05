@@ -1,16 +1,16 @@
-from selenium import webdriver
-from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
-import shutil
+import requests
+from requests import Request, Session
 import time
 from time import gmtime, strftime
 import json
 import os
 from os.path import dirname
 import sys
-
+from bs4 import BeautifulSoup
 if __name__ == '__main__':
 
     if sys.platform is 'win32' or sys.platform is 'cygwin' or os.name is 'nt':
+        # C:\Users\genieelecpsim\Downloads
         default_path = "C:\\Users\\"
         driver_name = "geckodriver.exe"
         default_user_path = default_path + os.environ['USERNAME']
@@ -22,34 +22,6 @@ if __name__ == '__main__':
         default_user_path = "/home"
         download_pth = "/home/BotDownloads"
         exe_path = dirname(__file__) + "/" + driver_name
-
-    with open('credentials.json') as data_file:
-        data = json.load(data_file)
-
-    username = data['id']
-    password = data['pw']
-    url = data['url']
-
-    # Creating Firefox Profile
-    profile = webdriver.FirefoxProfile()
-    profile.set_preference("browser.download.folderList", 2)
-    profile.set_preference("browser.download.manager.showWhenStarting", False)
-    profile.set_preference("browser.download.dir", download_pth)
-    profile.set_preference("browser.helperApps.neverAsk.saveToDisk",
-                           ("text/csv,"
-                            "application/x-msexcel,"
-                            "application/excel,"
-                            "application/x-excel,"
-                            "application/vnd.ms-excel,"
-                            "image/png,"
-                            "image/jpeg,"
-                            "text/html,"
-                            "text/plain,"
-                            "application/msword,"
-                            "application/xml"))
-
-    # Creating driver
-    driver = webdriver.Firefox(executable_path=exe_path, firefox_profile=profile)
 
     today = strftime("%d/%m/%Y", gmtime())
     day = int(today.split("/")[0])
@@ -96,11 +68,22 @@ if __name__ == '__main__':
             else:
                 month = "0"+str(month)
         if i == 0:
-            end_day = str(day+"/"+month+"/"+str(year))
+            end_day = str(str(year)+"/"+month+"/"+day)
         if i == 1:
-            start_day = str(day+"/"+month+"/"+str(year))
+            start_day = str(str(year)+"/"+month+"/"+day)
+
+    with open('credentials.json') as data_file:
+        data = json.load(data_file)
+
+    username = data['id']
+    password = data['pw']
+    url = data['url']
+    urllogin = data['urllogin']
 
     # Connecting to Ores' website
+    """
+    # Creating driver
+    driver = webdriver.Firefox(executable_path=exe_path)
     driver.get(url)
     login_box = driver.find_element_by_name('username')
     pw_box = driver.find_element_by_name('password')
@@ -110,115 +93,95 @@ if __name__ == '__main__':
     pw_box.send_keys(password)
     auth_btn.click()
 
-    # Waiting for the new page to load
-    time.sleep(4)
-
     # Locating and clicking on the "UMONS" header
-    umons_menu = driver.find_element_by_css_selector(
-        "h3#ui-accordion-groupAccordeon-header-1"
-        ".ui-accordion-header"
-        ".ui-helper-reset"
-        ".ui-state-default"
-        ".ui-accordion-icons"
-        ".ui-corner-all")
-    umons_menu.click()
-    # Waiting for browser's response
-    time.sleep(3)
+    try:
+        # This method will make the driver driver wait, for a maximum of 5 seconds, for an element to be located.
+        umons_menu = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR,
+                                            'h3#ui-accordion-groupAccordeon-header-1'
+                                            '.ui-accordion-header'
+                                            '.ui-helper-reset'
+                                            '.ui-state-default'
+                                            '.ui-accordion-icons'
+                                            '.ui-corner-all')))
+        umons_menu.click()
+    except TimeoutError:
+        print("umons_menu not found (timeout)")
+        with open("download_ores.log", "wb") as log:
+            print(today, ": umons_menu not found (timeout)")
     # The list of all EAN"s
-    EAN_listview = driver.find_element_by_id("group_12").find_element_by_tag_name("div")
+    try:
+        EAN_select = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located(
+                (By.ID, "group_12")
+            )
+        )
+        time.sleep(1)
+    except TimeoutError:
+        print("EAN_select not found (timeout)")
+        with open("download_ores.log", "wb") as log:
+            print(today, ": EAN_select not found (timeout)")
+
+    EAN_listview = EAN_select.find_element_by_tag_name("div")
+
     # Gray EAN's
     gray_list = EAN_listview.find_elements_by_class_name("meterlink")
     # Green EAN's
-    green_list = EAN_listview.find_elements_by_class_name("meterlinktrue")
+    green_list = EAN_listview.find_elements_by_class_name("meterlinktrue")"""
 
     filename = ""
 
-    i = 0
-    for ean in gray_list:
-        # Click on the right EAN to get its information.
-        gray_list[i].click()
-        time.sleep(4)
-        # Locating the part of the page where we'll be able to click to download file
-        main_div = driver.find_element_by_id("content")
-        tabs_div = main_div.find_element_by_id("tabs")
-        # Div where the relevant UI's lying
-        ui_div = tabs_div.find_element_by_id("tabs-1")
-        # Getting to the tab (date's user input)
-        row_input = ui_div.find_element_by_tag_name("table") \
-            .find_element_by_tag_name("tbody") \
-            .find_element_by_tag_name("tr")
-        # Getting all the columns
-        table_cols = row_input.find_elements_by_tag_name("td")
-        switch = table_cols[0]
-        datepicker = table_cols[1]
-        timestamp = table_cols[2]
-        download_btn = table_cols[3]
-        # Loading the wanted date
-        start_picker = datepicker.find_element_by_id("chartStartDatePicker")
-        end_picker = datepicker.find_element_by_id("chartEndDatePicker")
-        start_picker.clear()
-        start_picker.send_keys(start_day)
-        end_picker.clear()
-        end_picker.send_keys(end_day)
-        datepicker.find_element_by_name("refresh").click()
-        time.sleep(4)
-        # Getting the right timestamp
-        timestamp.find_element_by_id("min15").click()
-        time.sleep(2)
-        # Downloading file
-        download_btn.find_element_by_name("export").click()
-        time.sleep(4)
-        day_for_file = start_day.replace("/", "-")
-        filename = ean.text.split("-")[0]+"_gris_"+day_for_file+".csv"
-        for file in os.listdir(download_pth):
-            if file.startswith("export") and file.endswith(".csv"):
-                newfile = os.path.join(download_pth, filename)
-                shutil.move(os.path.join(download_pth, file), newfile)
-                print(os.listdir(download_pth))
-        i += 1
+    try:
+        with requests.Session() as s:
+            login_req = s.post(urllogin, data={'username': username, 'password': password}, stream=True)
+            page_with_list = s.get("https://www.ores-smartmetering.be/smores/resources/meter/group/12?_=1493990362446")
+            html_to_parse = page_with_list.json()
+            print(html_to_parse)
+            gray_list = []
+            green_list = []
+            for element in html_to_parse:
+                if element['eco']:
+                    green_list.append(element)
+                else:
+                    gray_list.append(element)
 
-    i = 0
-    for ean in green_list:
-        # Click on the right EAN to get its information.
-        green_list[i].click()
-        time.sleep(4)
+            for ean in gray_list:
+                ean_id = ean['id']
+                dl_url = "https://ores-smartmetering.be/smores/resources/meterdata/csv/meter/" \
+                      "%s?startDate=%sT22:00:00"\
+                      "Z&endDate=%sT22:00:00Z&period=MINUTES_15" \
+                         % (ean_id, start_day.replace("/", "-"), end_day.replace("/", "-"))
+                download_req = Request('GET', dl_url)
+                cook = {}
+                for (key, val) in s.cookies.items():
+                    cook[key] = val
+                r = s.get(dl_url, cookies=cook)
+                day_for_file = start_day.replace("/", "-")
+                filename = ean['ean'] + "_gris_" + day_for_file + ".csv"
+                if r.status_code == 200:
+                    with open(os.path.join(download_pth, filename), "wb") as file:
+                        for bits in r.iter_content():
+                            file.write(bits)
+                time.sleep(0.5)
 
-        # Locating the part of the page where we'll be able to click to download file
-        main_div = driver.find_element_by_id("content")
-        tabs_div = main_div.find_element_by_id("tabs")
-        # Div where the relevant UI's lying
-        ui_div = tabs_div.find_element_by_id("tabs-1")
-        # Getting to the tab (date's user input)
-        row_input = ui_div.find_element_by_tag_name("table") \
-            .find_element_by_tag_name("tbody") \
-            .find_element_by_tag_name("tr")
-        # Getting all the columns
-        table_cols = row_input.find_elements_by_tag_name("td")
-        switch = table_cols[0]
-        datepicker = table_cols[1]
-        timestamp = table_cols[2]
-        download_btn = table_cols[3]
-        # Loading the wanted date
-        start_picker = datepicker.find_element_by_id("chartStartDatePicker")
-        end_picker = datepicker.find_element_by_id("chartEndDatePicker")
-        start_picker.clear()
-        start_picker.send_keys(start_day)
-        end_picker.clear()
-        end_picker.send_keys(end_day)
-        datepicker.find_element_by_name("refresh").click()
-        time.sleep(4)
-        # Getting the right timestamp
-        timestamp.find_element_by_id("min15").click()
-        time.sleep(2)
-        # Downloading file
-        download_btn.find_element_by_name("export").click()
-        time.sleep(4)
-        day_for_file = start_day.replace("/", "-")
-        filename = ean.text.split("-")[0] + "_vert_" + day_for_file + ".csv"
-        for file in os.listdir(download_pth):
-            if file.startswith("export") and file.endswith(".csv"):
-                newfile = os.path.join(download_pth, filename)
-                shutil.move(os.path.join(download_pth, file), newfile)
-                print(os.listdir(download_pth))
-        i += 1
-    driver.close()
+            for ean in green_list:
+                ean_id = ean['id']
+                dl_url = "https://ores-smartmetering.be/smores/resources/meterdata/csv/meter/" \
+                         "%s?startDate=%sT22:00:00" \
+                         "Z&endDate=%sT22:00:00Z&period=MINUTES_15" \
+                         % (ean_id, start_day.replace("/", "-"), end_day.replace("/", "-"))
+                download_req = Request('GET', dl_url)
+                cook = {}
+                for (key, val) in s.cookies.items():
+                    cook[key] = val
+                r = s.get(dl_url, cookies=cook)
+                day_for_file = start_day.replace("/", "-")
+                filename = ean.text.split("-")[0] + "_vert_" + day_for_file + ".csv"
+                if r.status_code == 200:
+                    with open(os.path.join(download_pth, filename), "wb") as file:
+                        for bits in r.iter_content():
+                            file.write(bits)
+                time.sleep(0.5)
+
+    finally:
+        pass
