@@ -1,5 +1,4 @@
-from selenium import webdriver
-from pyvirtualdisplay import Display
+
 import shutil
 import time
 from time import gmtime, strftime
