@@ -1,4 +1,4 @@
-FROM jaimelopesflores/python3-firefox-headless
+FROM python:3.6
 
 MAINTAINER Simon De Greve - Bury Victor
 
@@ -21,6 +21,7 @@ ADD __init__.py $DIRPATH/__init__.py
 RUN mkdir $DIRPATH/BotDownloads
 
 RUN pip install -r requirements.txt
-RUN pip install pyvirtualdisplay
+
+VOLUME $DIRPATH
 
 EXPOSE 80 443
