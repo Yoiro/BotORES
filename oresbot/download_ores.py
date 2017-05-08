@@ -6,7 +6,6 @@ import json
 import os
 from os.path import dirname
 import sys
-from bs4 import BeautifulSoup
 if __name__ == '__main__':
 
     if sys.platform is 'win32' or sys.platform is 'cygwin' or os.name is 'nt':
@@ -176,7 +175,7 @@ if __name__ == '__main__':
                     cook[key] = val
                 r = s.get(dl_url, cookies=cook)
                 day_for_file = start_day.replace("/", "-")
-                filename = ean.text.split("-")[0] + "_vert_" + day_for_file + ".csv"
+                filename = ean['ean'] + "_vert_" + day_for_file + ".csv"
                 if r.status_code == 200:
                     with open(os.path.join(download_pth, filename), "wb") as file:
                         for bits in r.iter_content():
