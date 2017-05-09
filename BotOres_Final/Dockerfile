@@ -18,9 +18,15 @@ ADD requirements.txt $DIRPATH/requirements.txt
 
 ADD __init__.py $DIRPATH/__init__.py
 
+ADD crontab $DIRPATH/crontab
+
+chmod a+x crontab
+
 RUN mkdir $DIRPATH/BotDownloads
 
 RUN pip install -r requirements.txt
+
+RUN cron crontab
 
 VOLUME $DIRPATH
 

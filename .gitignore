@@ -246,5 +246,7 @@ fabric.properties
 # Security ignore
 credentials.json
 
+
+*/credentials.json
 # Archives
 *.zip
