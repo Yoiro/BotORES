@@ -6,6 +6,13 @@ import json
 import os
 from os.path import dirname
 import sys
+
+
+class ReqError(requests.exceptions.RequestException):
+    def __init__(self, url, session, **kwargs):
+        super(ReqError, self).__init__(**kwargs)
+        self.url = url
+
 if __name__ == '__main__':
 
     if sys.platform is 'win32' or sys.platform is 'cygwin' or os.name is 'nt':
@@ -18,8 +25,8 @@ if __name__ == '__main__':
     else:
         default_path = "/"
         driver_name = "geckodriver"
-        default_user_path = "/home"
-        download_pth = "/home/BotDownloads"
+        default_user_path = default_path + "volume1/share/"
+        download_pth = "/volume1/share/BotDownloads"
         exe_path = dirname(__file__) + "/" + driver_name
 
     today = strftime("%d/%m/%Y", gmtime())
@@ -131,76 +138,101 @@ if __name__ == '__main__':
 
     filename = ""
 
-    try:
-        # Everything has to be in the same browser session, so we start a new one by using the "with" keyword, to make
-        # sure it will be automatically closed when we'll exit the "with" block.
-        with requests.Session() as s:
-            # Request to log in. It's a POST request using basic authentification.
-            login_req = s.post(urllogin, data={'username': username, 'password': password}, stream=True)
-            # The link to the array of EAN and their values.
-            page_with_list = s.get("https://www.ores-smartmetering.be/smores/resources/meter/group/12?_=1493990362446")
-            # Once we've retrieved the list, we have to convert it into proper JSON.
-            html_to_parse = page_with_list.json()
-            gray_list = []
-            green_list = []
-            for element in html_to_parse:
-                # If their "eco" key corresponds to a "True" value, we will put them into the "green_list"
-                if element['eco']:
-                    green_list.append(element)
-                # If not, we will put them into the gray-list.
-                else:
-                    gray_list.append(element)
+    # Everything has to be in the same browser session, so we start a new one by using the "with" keyword, to make
+    # sure it will be automatically closed when we'll exit the "with" block.
+    with requests.Session() as s:
+        # Request to log in. It's a POST request using basic authentification.
+        login_req = s.post(urllogin, data={'username': username, 'password': password}, stream=True)
+        # The link to the array of EAN and their values.
+        page_with_list = s.get("https://www.ores-smartmetering.be/smores/resources/meter/group/12?_=1493990362446")
+        # Once we've retrieved the list, we have to convert it into proper JSON.
+        html_to_parse = page_with_list.json()
+        gray_list = []
+        green_list = []
+        for element in html_to_parse:
+            # If their "eco" key corresponds to a "True" value, we will put them into the "green_list"
+            if element['eco']:
+                green_list.append(element)
+            # If not, we will put them into the gray-list.
+            else:
+                gray_list.append(element)
 
+        # Treatments are the same for both lists:
+        for ean in gray_list:
+            # First we retrieve the (html)ID of the current EAN.
+            ean_id = ean['id']
+            # Then we pass it to the direct download link
 
-            # Treatments are the same for both lists:
-            for ean in gray_list:
-                # First we retrieve the (html)ID of the current EAN.
-                ean_id = ean['id']
-                # Then we pass it to the direct download link
-                dl_url = "https://ores-smartmetering.be/smores/resources/meterdata/csv/meter/" \
-                      "%s?startDate=%sT22:00:00"\
-                      "Z&endDate=%sT22:00:00Z&period=MINUTES_15" \
-                         % (ean_id, start_day.replace("/", "-"), end_day.replace("/", "-"))
-                # Once the link is created, we prepare a GET request from it.
-                download_req = Request('GET', dl_url)
-                # Of course, we want to keep the authentication alive, so we will have to create some cookies, so the
-                # connection will be able to consume them.
-                cook = {}
-                for (key, val) in s.cookies.items():
-                    cook[key] = val
-                # Executing the GET request
+            dl_url = "https://ores-smartmetering.be/smores/resources/meterdata/csv/meter/" \
+                  "%s?startDate=%sT22:00:00"\
+                  "Z&endDate=%sT22:00:00Z&period=MINUTES_15" \
+                     % (ean_id, start_day.replace("/", "-"), end_day.replace("/", "-"))
+            # Once the link is created, we prepare a GET request from it.
+            download_req = Request('GET', dl_url)
+            # Of course, we want to keep the authentication alive, so we will have to create some cookies, so the
+            # connection will be able to consume them.
+            cook = {}
+            for (key, val) in s.cookies.items():
+                cook[key] = val
+            # Executing the GET request
+            try:
                 r = s.get(dl_url, cookies=cook)
-                # Formatting the file name.
-                day_for_file = start_day.replace("/", "-")
-                filename = ean['ean'] + "_gris_" + day_for_file + ".csv"
-                # If we are authenticated, we open a new file with the download_path + the filename, and write the bytes
-                # we retrieved from the GET request.
-                if r.status_code == 200:
-                    with open(os.path.join(download_pth, filename), "wb") as file:
-                        for bits in r.iter_content():
-                            file.write(bits)
-                # We then sleep a bit so the server won't be overloaded.
-                time.sleep(0.5)
+            except ReqError as e:
+                e.url = dl_url
+                with open("download_bot.log", "a") as errors:
+                    errors.writelines(e.url)
+                continue
+            # Formatting the file name.
+            day_for_file = start_day.replace("/", "-")
+            filename = ean['ean'] + "_gris_" + day_for_file + ".csv"
+            # If we are authenticated, we open a new file with the download_path + the filename, and write the bytes
+            # we retrieved from the GET request.
+            if r.status_code == 200:
+                with open(os.path.join(download_pth, filename), "wb") as file:
+                    for bits in r.iter_content():
+                        file.write(bits)
+            # We then sleep a bit so the server won't be overloaded.
+            time.sleep(0.5)
 
-            for ean in green_list:
-                ean_id = ean['id']
-                dl_url = "https://ores-smartmetering.be/smores/resources/meterdata/csv/meter/" \
-                         "%s?startDate=%sT22:00:00" \
-                         "Z&endDate=%sT22:00:00Z&period=MINUTES_15" \
-                         % (ean_id, start_day.replace("/", "-"), end_day.replace("/", "-"))
-                download_req = Request('GET', dl_url)
-                cook = {}
-                for (key, val) in s.cookies.items():
-                    cook[key] = val
+        for ean in green_list:
+            ean_id = ean['id']
+            dl_url = "https://ores-smartmetering.be/smores/resources/meterdata/csv/meter/" \
+                     "%s?startDate=%sT22:00:00" \
+                     "Z&endDate=%sT22:00:00Z&period=MINUTES_15" \
+                     % (ean_id, start_day.replace("/", "-"), end_day.replace("/", "-"))
+            download_req = Request('GET', dl_url)
+            cook = {}
+            for (key, val) in s.cookies.items():
+                cook[key] = val
+            try:
                 r = s.get(dl_url, cookies=cook)
-                day_for_file = start_day.replace("/", "-")
-                filename = ean['ean'] + "_vert_" + day_for_file + ".csv"
-                if r.status_code == 200:
-                    with open(os.path.join(download_pth, filename), "wb") as file:
-                        for bits in r.iter_content():
-                            file.write(bits)
-                time.sleep(0.5)
+            except ReqError as e:
+                e.url = dl_url
+                with open("download_bot.log", "a") as errors:
+                    errors.writelines(e.url)
+                continue
+            day_for_file = start_day.replace("/", "-")
+            filename = ean['ean'] + "_vert_" + day_for_file + ".csv"
+            if r.status_code == 200:
+                with open(os.path.join(download_pth, filename), "wb") as file:
+                    for bits in r.iter_content():
+                        file.write(bits)
+            time.sleep(0.5)
 
-    finally:
-        # If we have an error, do nothing.
-        pass
+        file = default_user_path + "download_ores.log"
+        if os.path.isfile(file):
+            cook = {}
+            for (key, val) in s.cookies.items():
+                cook[key] = val
+            with open(file, "t") as file:
+                lines = file.readlines()
+                i = 0
+                while True:
+                    try:
+                        line = lines[i]
+                        s.get(line, cookies=cook)
+                        lines.remove(line)
+                        if len(lines) < 1:
+                            break
+                    except ReqError as e:
+                        continue

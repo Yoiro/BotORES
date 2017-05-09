@@ -1,6 +1,9 @@
-FROM python:3.6
+FROM ubuntu:latest
 
 MAINTAINER Simon De Greve - Bury Victor
+
+RUN apt-get update -y
+RUN apt-get install -y python3 python3-pip cron vim
 
 RUN mkdir /volume1/
 RUN mkdir /volume1/share/
@@ -20,14 +23,16 @@ ADD __init__.py $DIRPATH/__init__.py
 
 ADD crontab $DIRPATH/crontab
 
-chmod a+x crontab
+RUN chmod a+x crontab
+
+ADD startOresBot.sh $DIRPATH/startOresBot.sh
 
 RUN mkdir $DIRPATH/BotDownloads
 
-RUN pip install -r requirements.txt
+RUN pip3 install -U pip
 
-RUN cron crontab
+RUN pip3 install -r requirements.txt
 
-VOLUME $DIRPATH
+RUN crontab -u root crontab
 
 EXPOSE 80 443
