@@ -250,3 +250,4 @@ credentials.json
 */credentials.json
 # Archives
 *.zip
+*.json
